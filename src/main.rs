@@ -1,6 +1,6 @@
 pub mod issues;
 
-use issues::{create_issue, fetch_issues, Error, Issue};
+use issues::{create_issues, fetch_issues, Error, Issue};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -18,7 +18,8 @@ async fn main() -> Result<(), Error> {
         status: None,
     };
 
-    create_issue(new_issue).await?;
+    let issues = vec![new_issue];
+    create_issues(issues).await?;
 
     Ok(())
 }

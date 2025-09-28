@@ -62,19 +62,20 @@ pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
     Ok(issues)
 }
 
-pub async fn create_issue(issue: Issue) -> Result<(), Error> {
+pub async fn create_issues(issues: Vec<Issue>) -> Result<(), Error> {
     let rc = get_repo_config().unwrap();
 
     let token = std::env::var("GH_TOKEN").expect("GH_TOKEN env variable is required");
     let octocrab = Octocrab::builder().personal_token(token).build()?;
 
-    octocrab
-        .issues(rc.user_name, rc.repo_name)
-        .create(issue.msg.clone())
-        .assignees(vec![issue.assignee.clone()])
-        .body(issue.msg)
-        .send()
-        .await?;
-
+    for issue in issues.iter() {
+        octocrab
+            .issues(rc.user_name.clone(), rc.repo_name.clone())
+            .create(issue.msg.clone())
+            .assignees(vec![issue.assignee.clone()])
+            .body(issue.msg.clone())
+            .send()
+            .await?;
+    }
     Ok(())
 }

@@ -1,21 +1,22 @@
 use git2::Repository;
 use octocrab::models::IssueState;
-use octocrab::{models, params, Error};
+use octocrab::{models, params, Error, Octocrab, Result};
 
 #[derive(Debug)]
 struct RepoConfig {
-    Username: String,
-    RepoName: String,
+    user_name: String,
+    repo_name: String,
 }
 
 #[derive(Debug)]
 pub struct Issue {
-    Number: u64,
-    Message: String,
-    Status: IssueState,
+    pub number: Option<u64>,
+    pub msg: String,
+    pub status: Option<IssueState>,
+    pub assignee: String,
 }
 
-fn getRepoConfig() -> Option<RepoConfig> {
+fn get_repo_config() -> Option<RepoConfig> {
     let repo = Repository::open(".").ok()?;
     let config = repo.config().ok()?;
     let origin_url = config
@@ -28,16 +29,16 @@ fn getRepoConfig() -> Option<RepoConfig> {
     let repo = parts[4].replace(".git", "");
 
     Some(RepoConfig {
-        Username: username.to_string(),
-        RepoName: repo.to_string(),
+        user_name: username.to_string(),
+        repo_name: repo.to_string(),
     })
 }
 
 pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
-    let rc = getRepoConfig().unwrap();
+    let rc = get_repo_config().unwrap();
     let octocrab = octocrab::instance();
     let page = octocrab
-        .issues(rc.Username, rc.RepoName)
+        .issues(rc.user_name, rc.repo_name)
         .list()
         // Optional Parameters
         .state(params::State::Open)
@@ -51,11 +52,29 @@ pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
     let issues = results
         .iter()
         .map(|s| Issue {
-            Number: s.number,
-            Status: IssueState::Open,
-            Message: s.title.to_string(),
+            number: Some(s.number),
+            status: Some(IssueState::Open),
+            msg: s.title.to_string(),
+            assignee: s.assignee.as_ref().unwrap().login.to_string(),
         })
         .collect();
 
     Ok(issues)
+}
+
+pub async fn create_issue(issue: Issue) -> Result<(), Error> {
+    let rc = get_repo_config().unwrap();
+
+    let token = std::env::var("GH_TOKEN").expect("GH_TOKEN env variable is required");
+    let octocrab = Octocrab::builder().personal_token(token).build()?;
+
+    octocrab
+        .issues(rc.user_name, rc.repo_name)
+        .create(issue.msg.clone())
+        .assignees(vec![issue.assignee.clone()])
+        .body(issue.msg)
+        .send()
+        .await?;
+
+    Ok(())
 }

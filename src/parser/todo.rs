@@ -31,14 +31,6 @@ impl Todo {
     }
 }
 
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
-}
-
 fn is_code_file(extension: Option<&OsStr>) -> bool {
     // TODO(sulfastor): Add more programming languagues comment agnostic
     const CODE_EXTENSIONS: &[&str] = &["rs", "md", "go"];

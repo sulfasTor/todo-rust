@@ -1,3 +1,3 @@
 ** todo-rust
 
-Create Github issues from your codebase and track them.
+Create Github issues from your codebase todos and track them.

@@ -12,6 +12,8 @@ anyhow = "1.0.100"
 clap = { version = "4.5.48", features = ["derive"] }
 git2 = "0.20.2"
 octocrab = "0.45.0"
+regex = "1.11.3"
 reqwest = "0.12.23"
 serde = "1.0.228"
 tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }
+walkdir = "2.5.0"

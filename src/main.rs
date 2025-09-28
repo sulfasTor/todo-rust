@@ -1,6 +1,8 @@
 pub mod issues;
+pub mod parser;
 
 use issues::{create_issues, fetch_issues, Error, Issue};
+use parser::{parse_todos, Todo};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -11,14 +13,14 @@ async fn main() -> Result<(), Error> {
         println!("{:?}", issue);
     }
 
-    let new_issue = Issue {
-        msg: "TODO: Fix this".to_string(),
-        assignee: "sulfastor".to_string(),
-        number: None,
-        status: None,
-    };
+    let todos = parse_todos();
 
-    let issues = vec![new_issue];
+    println!("Found todos {}", todos.len());
+    for todo in &todos {
+        println!("{:?}", todo)
+    }
+
+    let issues: Vec<Issue> = todos.into_iter().map(|t| t.into_issue()).collect();
     create_issues(issues).await?;
 
     Ok(())

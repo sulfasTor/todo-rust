@@ -11,9 +11,10 @@ struct RepoConfig {
 #[derive(Debug)]
 pub struct Issue {
     pub number: Option<u64>,
-    pub msg: String,
+    pub title: String,
+    pub body: String,
     pub status: Option<IssueState>,
-    pub assignee: String,
+    pub assignee: Option<String>,
 }
 
 fn get_repo_config() -> Option<RepoConfig> {
@@ -54,8 +55,9 @@ pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
         .map(|s| Issue {
             number: Some(s.number),
             status: Some(IssueState::Open),
-            msg: s.title.to_string(),
-            assignee: s.assignee.as_ref().unwrap().login.to_string(),
+            title: s.title.to_string(),
+            body: s.body.as_ref().unwrap().to_string(),
+            assignee: Some(s.assignee.as_ref().unwrap().login.to_string()),
         })
         .collect();
 
@@ -68,14 +70,15 @@ pub async fn create_issues(issues: Vec<Issue>) -> Result<(), Error> {
     let token = std::env::var("GH_TOKEN").expect("GH_TOKEN env variable is required");
     let octocrab = Octocrab::builder().personal_token(token).build()?;
 
-    for issue in issues.iter() {
-        octocrab
-            .issues(rc.user_name.clone(), rc.repo_name.clone())
-            .create(issue.msg.clone())
-            .assignees(vec![issue.assignee.clone()])
-            .body(issue.msg.clone())
-            .send()
-            .await?;
+    let repo = octocrab.issues(rc.user_name.clone(), rc.repo_name.clone());
+    for issue in &issues {
+        let mut builder = repo.create(issue.body.clone()).body(issue.body.clone());
+
+        if let Some(assignee) = issue.assignee.as_ref() {
+            builder = builder.assignees(vec![assignee.clone()]);
+        }
+
+        builder.send().await?;
     }
     Ok(())
 }
